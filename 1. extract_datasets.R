@@ -1,8 +1,8 @@
 ### This script will extract the datsets from your download folder and place them into a new directory 
 
-download_path <- "C:\\Users\\u449344\\downloads" # Enter your download file path
+download_path <- "" # Enter your download file path
 
-project_path <- "C:\\Users\\u449344\\OneDrive - SCOTS Connect\\SCCJR_hackathon\\sccjr-hackathon-2023" # Enter the file path where you want the project to sit
+project_path <- "" # Enter the file path where you want the project to sit
 
 setwd(project_path) # sets your current working directory to the specified project path
 
