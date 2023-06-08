@@ -39,8 +39,6 @@ In order to download them you will already need to already have an account on th
 
 The datasets first need to be added to a project before being downloadable. You can create a new project, add then add the datasets to your project and then download them.
 
-I would highly recommend downloading them as SPSS files, as this is in my opinion the easiest to work with and is what I have used when writing the other scripts you will see in the repo to make the data more manageable.
-
 The SCJS has been running since 2008/09 and has completed 9 survey sweeps in that time, with the most recent being in 2019/20. Not that there was no survey conducted in 2011/12, 2013/14 and 2015/16, so no need to spend time trying to hunt them down on the UKDS! Links to the locations of all datasets are below:
 
 * [2008/09 survey (includes self-completion and victim form data)](https://beta.ukdataservice.ac.uk/datacatalogue/studies/study?id=6362)
@@ -53,8 +51,21 @@ The SCJS has been running since 2008/09 and has completed 9 survey sweeps in tha
 * [2018/19 survey](https://beta.ukdataservice.ac.uk/datacatalogue/studies/study?id=8795)
 * [2019/20 survey](https://beta.ukdataservice.ac.uk/datacatalogue/studies/study?id=8799)
 
-### Step 3 - extracting the data:
-The files that you download from the UKDS contain the SPSS datasets as well as a number of other files that are not strictly necessary.
-The 'extract_datasets.R' file in the repo can be run to easily move just the datasets from your downloads folder into your project directory.
+If you are following along with these instructions then the only option is to download the files as SPSS files as this is how I have constructed the scripts to extract the data. You won't need to have SPSS installed on your machine as the R package 'haven' will be able to read these files. If you have a strong preference for another format then feel free to go down that route, however, note that this will make it much more difficult and time consuming to combine any of the datasets into a 'pooled sample', and many of the variables will not be reformatted to be tidier and more accessible to use.
 
+### Step 3: Running the R scripts
+Now that you have access to the code as well as the data files you are now able to begin running the R code to produce the datasets.
+
+If all things go well these scripts should be very much 'plug and play' and you will not need to do much at all other than run the scripts and let them do everything for you.
+
+Before proceeding you will need to do a couple of things first.
+
+The first is to make sure you have the required packages installed, as these are essential for running the scripts. These are the 'tidyverse' collection of packages and 'haven'. If you don't have these installed, you should be able to get them by running these lines in your R Studio console, or through the R Studio package installer.
+
+``` r
+install.packages("tidyverse")
+install.packages("haven")
+```
+
+#### Script 1
 
