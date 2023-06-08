@@ -56,7 +56,7 @@ If you are following along with these instructions then the only option is to do
 ### Step 3: Running the R scripts
 Now that you have access to the code as well as the data files you are now able to begin running the R code to produce the datasets.
 
-If all things go well these scripts should be very much 'plug and play' and you will not need to do much at all other than run the scripts and let them do everything for you.
+If all things go as intended these scripts should be very much 'plug and play' and you will not need to do much at all other than run the scripts and let them do everything for you.
 
 Before proceeding you will need to do a couple of things first.
 
