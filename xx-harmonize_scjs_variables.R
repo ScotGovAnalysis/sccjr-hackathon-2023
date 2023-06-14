@@ -4,30 +4,50 @@
 
 library(haven)
 library(tidyverse)
-library(fs)
+library(sjlabelled)
+
+
+
+
 
 # read in the list of main datasets from the raw data file
 # (but none of the victim forms, self-completion forms etc.)
 
-scjs_main <- 
-  fs::dir_ls(   # makes list of files...
-    here::here("01_data", "raw_data") #... from raw data folder
-  ) %>% 
-  as_data_frame() %>% 
-  filter(str_detect(value, "main")) # ... and selects only those with main in the name
-
-# read in the corresponding dataset and do some initial name tidying
-# to make all the names lowercase
-
-scjs_main <- 
-  scjs_main %>% 
-  mutate(data = map(value, read_sav),
-         data = map(data, janitor::clean_names))
+df_0809
 
 
 # write function to add case_id, survey_year and survey_case_id
 # some of the years call serial serial2, so add a clause to rename
 # to serial if needs be
+
+# doesn't include cyber right now
+
+combined_data <- 
+tibble(
+  year = c("2008_09",
+           "2009_10",
+           "2010_11",
+           "2012_13",
+           "2014_15",
+           "2016_17",
+           "2017_18",
+           "2018_19",
+           "2019_20"),
+  data = list(
+    
+      df_0809,
+      df_0910,
+      df_1011,
+      df_1213,
+      df_1415,
+      df_1617,
+      df_1718,
+      df_1819,
+      df_1920
+    
+  )
+)
+
 
 
 add_scjs_ids <- function(df, srv_year){
@@ -58,9 +78,9 @@ add_scjs_ids <- function(df, srv_year){
 # then save these variables back into the datasets
 
 scjs_main <- 
-  scjs_main %>% 
-  mutate(year = str_extract(value, "[0-9][0-9][0-9][0-9]_[0-9][0-9]"),
-         data = map2(data, year, add_scjs_ids))
+  combined_data %>% 
+  mutate(data = map2(data, year, add_scjs_ids))
+
 
 
 
@@ -68,24 +88,24 @@ scjs_main <-
 # combined function -------------------------------------------------------
 
 # # this is a big old function which wraps the individual cleaning steps: 
-scjs_{year} %>% 
-  clean_scjs_names(., year = year) %>% 
-  recode_single_parents() %>% 
-  recode_age(., year = year) %>% 
-  recode_disability(., year = year) %>% 
-  recode_marital(., year = year) %>% 
-  recode_income(., year = year) %>% 
-  recode_ethnicity(., year = year) %>% 
-  recode_accommodation(., year = year) %>% 
-  recode_urban_rural(., year = year) %>% 
-  recode_employment(., year = year) %>% 
-  recode_number_of_cars() %>% 
-  recode_single_pensioner() %>% 
-  recode_tenure(., year = year) %>% 
-  recode_time_in_area() %>% 
-  recode_has_motorvehicle() %>% 
-  recode_gender() %>% 
-  recode_hundred_pounds()
+# scjs_{year} %>% 
+#   clean_scjs_names(., year = year) %>% 
+#   recode_single_parents() %>% 
+#   recode_age(., year = year) %>% 
+#   recode_disability(., year = year) %>% 
+#   recode_marital(., year = year) %>% 
+#   recode_income(., year = year) %>% 
+#   recode_ethnicity(., year = year) %>% 
+#   recode_accommodation(., year = year) %>% 
+#   recode_urban_rural(., year = year) %>% 
+#   recode_employment(., year = year) %>% 
+#   recode_number_of_cars() %>% 
+#   recode_single_pensioner() %>% 
+#   recode_tenure(., year = year) %>% 
+#   recode_time_in_area() %>% 
+#   recode_has_motorvehicle() %>% 
+#   recode_gender() %>% 
+#   recode_hundred_pounds()
 
 # when a function has an argument for year that means that the coding of SCJS
 # has changed so we have to do something slightly different
@@ -702,7 +722,10 @@ scjs_combined <-
 #   income = fct_explicit_na(income, "Refused/Don't know/Missing")) %>% 
 #   select(-value, -year)
 
+# so n_adults, n_children and simd have issues
 
+scjs_combined |> 
+  count(simd_quint)
 
 # update after team meeting 2021-03-30 ------------------------------------
 
