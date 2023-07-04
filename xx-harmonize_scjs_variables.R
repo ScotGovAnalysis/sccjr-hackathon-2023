@@ -798,4 +798,4 @@ scjs_combined <-
 
 
 saveRDS(scjs_combined,
-        here::here("01_data", "clean_data", "scjs_main_2008_09_19_20_explanatory_vars.rds"))
+        here::here("data", "scjs_main_2008_09_19_20_explanatory_vars.rds"))

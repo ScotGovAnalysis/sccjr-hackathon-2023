@@ -1,5 +1,6 @@
 require(tidyverse)
 require(haven)
+library(sjlabelled)
 
 setwd(project_path)
 
@@ -76,4 +77,88 @@ df_0809_sc <- df_0809_sc %>% mutate(pool_serial = serial * 100 + pool_time)
 df_0910_sc <- df_0910_sc %>% mutate(pool_serial = serial * 100 + pool_time)
 df_1011_sc <- df_1011_sc %>% mutate(pool_serial = serial * 100 + pool_time)
 
+###############
 
+
+combined_data <- 
+  tibble(
+    year = c("2008_09",
+             "2009_10",
+             "2010_11",
+             "2012_13",
+             "2014_15",
+             "2016_17",
+             "2017_18",
+             "2018_19",
+             "2019_20"),
+    data = list(
+      
+      df_0809,
+      df_0910,
+      df_1011,
+      df_1213,
+      df_1415,
+      df_1617,
+      df_1718,
+      df_1819,
+      df_1920
+      
+    )
+  )
+
+
+
+add_scjs_ids <- function(df, srv_year){
+  
+  if("serial2" %in% colnames(df)) {
+    df <- 
+      df %>% 
+      rename(serial = serial2)
+  }
+  
+  df %>% 
+    mutate(case_id = str_pad(serial, 
+                             width = 10, # this is the maximum size of the case_id variable across all datsets
+                             side = "left",
+                             pad = "0"),
+           survey_year = srv_year,
+           year_case_id = paste(survey_year, case_id, sep = "-")) %>% 
+    select(serial, case_id, survey_year,year_case_id, everything())
+  
+}
+
+
+
+# cleaning names --------------------------------------------------------------------
+
+# extract the survey year from the name of the dataset and
+# pass this to the function to make the case_ids and year_case_ids
+# then save these variables back into the datasets
+
+scjs_main <- 
+  combined_data %>% 
+  mutate(data = map2(data, year, add_scjs_ids))
+
+
+
+scjs_clean_and_standardize <- function(df, year){
+  
+  ivs <- c(
+    "case_id",
+    "survey_year",
+    "year_case_id"
+  )
+  
+  df <- 
+    df %>% 
+    select(ivs) 
+  
+}
+
+
+
+
+scjs_combined <- 
+  scjs_main %>% 
+  mutate(data = map2(data, year, scjs_clean_and_standardize)) %>% 
+  unnest_legacy()
