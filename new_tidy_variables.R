@@ -85,7 +85,7 @@ add_scjs_ids <- function(df, srv_year){
 }
 
 extract_name_data <- function(df, srv_year){
-  df <- df[,grepl(vars_to_keep2,names(df))]
+  df <- df[,grepl(vars_to_keep,names(df))]
 }
 
 ### Apply functions
@@ -94,7 +94,7 @@ scjs_combined <-
   combined_data %>% 
   mutate(data = map2(data, year, df_names_lower)) %>% 
   mutate(data = map2(data, year, add_scjs_ids)) %>% 
-  mutate(data = map2(data, year, extract_name_data)) %>% 
+  mutate(data = map2(data, year, subset_vars)) %>% 
   unnest_legacy()
 
 
@@ -114,17 +114,78 @@ scjs_combined %>% select(year, prevsurveycrime, wgtgindiv) %>%
 
 
 
+##############
+
+df_test <- df_0809 %>% select(nummot)
+"QS2AREAS" %in% names(df_1920)
+"numcar" %in% names(df_1213)
+
+vars_to_keep2 <- c("serial|case|wgtg|prev|qpolconf|qs2area|qsfdark|qsfnigh|qratpol|polop|compol|polpres|qworr|numcar|qaco_|lcpeop|qhworr|qswem|dconf|pcon|nummot|polpatr")
+broken_vars <- c("nummot|polpatr")
+
+
+
+df_0809_test <- df_0809[,grepl(vars_to_keep2,names(df_0809))]
+df_0910_test <- df_0910[,grepl(vars_to_keep2,names(df_0910))]
+df_1011_test <- df_1011[,grepl(vars_to_keep2,names(df_1011))]
+df_1213_test <- df_1213[,grepl(vars_to_keep2,names(df_1213))]
+df_1415_test <- df_1415[,grepl(vars_to_keep2,names(df_1415))]
+df_1617_test <- df_1617[,grepl(vars_to_keep2,names(df_1617))]
+df_1718_test <- df_1718[,grepl(vars_to_keep2,names(df_1718))]
+df_1819_test <- df_1819[,grepl(vars_to_keep2,names(df_1819))]
+df_1920_test <- df_1920[,grepl(vars_to_keep2,names(df_1920))]
+
+scjs_combined2 <- scjs_combined %>% select(year, qs2area) %>% filter(year == "2019_20")
+names(scjs_combined)
+
+subset_vars <- function(df, srv_year){
+  df %>% select(serial, case_id, survey_year,year_case_id,
+                starts_with(c("wgtg", #weighting
+                            "prev", #prevalence
+                            "qs2area", #crime rate
+                            "qsfdark", #feeling of safety
+                            "qsfnigh", #feeling of safety
+                            "qworr", #worry of victimisation
+                            "qhapp", #perceived likelihood of victimisation
+                            "qdconf",
+                            "qpolconf",
+                            "polpatr",
+                            "polpres",
+                            "polop",
+                            "qpcon",
+                            # "cyber",
+                            "qwall",
+                            "lcpeop",
+                            "qaco"
+                            ))
+                )
+}
+
+
+################
+
+rowsum_partialstringmatch_variables<-function(df,partial,full){
+  df %>% dplyr::select(contains(partial)) %>% names() -> allnames
+  #these are all the variables which have an equivalent variable but with a 0
+  allnames[sapply(seq_along(allnames),
+                  function(x) any(grepl(gsub(partial,full,allnames[x]),allnames[-x]))
+  )] -> mismatchnames
+  
+  for (i in gsub(partial,full,mismatchnames)){
+    df[,i]<-rowSums_na(cbind(df[,i],df[,gsub(full,partial,i)]))
+  }
+  cat("these variables",mismatchnames,"have been collapsed into",gsub(partial,full,mismatchnames),sep=" ")
+  return(df %>% dplyr::select(-one_of(mismatchnames)))
+}
 
 
 
 
+scjs_combined %>% group_by(year) %>% summarise_all(
+  ~ sum(!is.na(.))) %>%
+  gather(., key="variable",value="number_obs",-year) -> year_counts
 
-
-
-
-
-
-
-
-
-
+year_counts %>% group_by(variable) %>% 
+  summarise(
+    no_na = !(any(number_obs==0))
+  ) -> variable_across_years
