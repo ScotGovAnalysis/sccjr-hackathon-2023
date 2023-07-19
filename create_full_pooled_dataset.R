@@ -203,9 +203,9 @@ total_rows
 
 #### Combine years ####
 
-scjs_combined_full2 <- dplyr::bind_rows(df_0809, df_0910, df_1011,
-                                df_1213, df_1415, df_1617,
-                                df_1718, df_1819, df_1920, .ptype = df_0809)
+scjs_combined_full2 <- bind_rows(df_0809, df_0910, df_1011,
+                                 df_1213, df_1415, df_1617,
+                                 df_1718, df_1819, df_1920)
 
 #### Add pooling info ####
 
