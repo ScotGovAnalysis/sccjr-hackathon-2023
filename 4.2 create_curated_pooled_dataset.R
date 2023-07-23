@@ -1,40 +1,44 @@
-# upload from SCJS analysis project
-
-
-
-library(haven)
 library(tidyverse)
+library(haven)
 library(sjlabelled)
 
+# setwd(project_path)
 
+convert_columns_to_numeric <- function(df) {
+  col_names <- colnames(df)
+  inc_cols <- col_names[startsWith(col_names, "inc")]
+  
+  for (col in inc_cols) {
+    df[[col]] <- as.numeric(as.character(df[[col]]))
+  }
+  
+  return(df)
+}
 
+df_1617 <- convert_columns_to_numeric(df_1617)
+df_1718 <- convert_columns_to_numeric(df_1718)
 
+# df_1617 <- df_1617 %>%  mutate(incatttheftmv = as.numeric(incatttheftmv),
+#                                inctheftofmv = as.numeric(inctheftofmv),
+#                                incrob = as.numeric(incrob))
+# df_1718 <- df_1718 %>%  mutate(incatttheftmv = as.numeric(incatttheftmv),
+#                                inctheftofmv = as.numeric(inctheftofmv),
+#                                incrob = as.numeric(incrob))
 
-# read in the list of main datasets from the raw data file
-# (but none of the victim forms, self-completion forms etc.)
-
-df_0809
-
-
-# write function to add case_id, survey_year and survey_case_id
-# some of the years call serial serial2, so add a clause to rename
-# to serial if needs be
-
-# doesn't include cyber right now
-
+# note: do not attempt to view this dataset, will crash R in my experience
 combined_data <- 
-tibble(
-  year = c("2008_09",
-           "2009_10",
-           "2010_11",
-           "2012_13",
-           "2014_15",
-           "2016_17",
-           "2017_18",
-           "2018_19",
-           "2019_20"),
-  data = list(
-    
+  tibble(
+    year = c("2008_09",
+             "2009_10",
+             "2010_11",
+             "2012_13",
+             "2014_15",
+             "2016_17",
+             "2017_18",
+             "2018_19",
+             "2019_20"),
+    data = list(
+      
       df_0809,
       df_0910,
       df_1011,
@@ -44,11 +48,20 @@ tibble(
       df_1718,
       df_1819,
       df_1920
-    
+      
+    )
   )
-)
 
 
+
+
+# vars_to_keep <- c("serial|case|wgtg|prev|qpolconf|qs2area|qsfdark|qsfnigh|qratpol|polop|compol|polpres|qworr|numcar|qaco_|lcpeop|qhworr|qswem|dconf|pcon")
+# broken_vars <- c("nummot|polpatr")
+
+### Functions
+df_names_lower <- function(df, srv_year){
+  df %>% rename_all(., .funs = tolower)
+}
 
 add_scjs_ids <- function(df, srv_year){
   
@@ -69,54 +82,17 @@ add_scjs_ids <- function(df, srv_year){
   
 }
 
-
-
-# cleaning names --------------------------------------------------------------------
-
-# extract the survey year from the name of the dataset and
-# pass this to the function to make the case_ids and year_case_ids
-# then save these variables back into the datasets
-
-scjs_main <- 
-  combined_data %>% 
-  mutate(data = map2(data, year, add_scjs_ids))
-
-
-
-
-
-# combined function -------------------------------------------------------
-
-# # this is a big old function which wraps the individual cleaning steps: 
-# scjs_{year} %>% 
-#   clean_scjs_names(., year = year) %>% 
-#   recode_single_parents() %>% 
-#   recode_age(., year = year) %>% 
-#   recode_disability(., year = year) %>% 
-#   recode_marital(., year = year) %>% 
-#   recode_income(., year = year) %>% 
-#   recode_ethnicity(., year = year) %>% 
-#   recode_accommodation(., year = year) %>% 
-#   recode_urban_rural(., year = year) %>% 
-#   recode_employment(., year = year) %>% 
-#   recode_number_of_cars() %>% 
-#   recode_single_pensioner() %>% 
-#   recode_tenure(., year = year) %>% 
-#   recode_time_in_area() %>% 
-#   recode_has_motorvehicle() %>% 
-#   recode_gender() %>% 
-#   recode_hundred_pounds()
-
-# when a function has an argument for year that means that the coding of SCJS
-# has changed so we have to do something slightly different
-# for that sweep of SCJS
-
-
+# tidy_vars <- function(df, srv_year){
+#   if (year == "2016_17" | year == "2017_18"){
+#     df %>%
+#       mutate(incatttheftmv = as.numeric(incatttheftmv))
+#   }
+# }
 
 scjs_clean_and_standardize <- function(df, year){
   
   
-  # defne all the sub-functions
+  # define all the sub-functions
   
   clean_scjs_names <- function(df, year){
     
@@ -628,6 +604,11 @@ scjs_clean_and_standardize <- function(df, year){
       )
   }
   
+  tidy_factors <- function(df){
+    df %>% 
+      mutate(n_adults = as.numeric(n_adults)) %>% 
+      mutate(n_children = as.numeric(n_children))
+  }
   
   # apply all the sub-functions in sequence
   
@@ -650,8 +631,8 @@ scjs_clean_and_standardize <- function(df, year){
     recode_time_in_area() %>% 
     recode_has_motorvehicle() %>% 
     recode_gender() %>% 
-    recode_hundred_pounds()
-  
+    recode_hundred_pounds() %>% 
+    tidy_factors() 
   
   # select the variables that we want to keep from the dataset
   
@@ -684,118 +665,195 @@ scjs_clean_and_standardize <- function(df, year){
   
   df <- 
     df %>% 
-    select(ivs) 
+    select(ivs,
+           starts_with(c("wgtg", #weighting
+                         "prev", #prevalence - a bit untidy to include
+                         #"rep", #repeat victim
+                         "inc", #incidence
+                         "qs2area", #crime rate
+                         "qsfdark", #feeling of safety
+                         "qsfnigh", #feeling of safety
+                         "qworr", #worry of victimisation
+                         "qhapp", #perceived likelihood of victimisation
+                         "qdconf", #confidence in justice system
+                         "qpolconf", #confidence in police
+                         #"polpatr", #police visibility - for some reason this causes errors so excluding for now
+                         "polpres", #police presence
+                         "polop", #attitude to police
+                         "qpcon", #police contact
+                         "qwall", #how react to wallet stolen
+                         "lcpeop", #attitude to local government
+                         "qaco_", #perception of local crime/issues
+                         "qhworr", #worry about harassment
+                         "qswem", #mental wellbeing score
+                         "laa", #local authority
+                         "pfa", #police force area
+                         "qdi100", #how easily can source £100
+                         "qdcrime2", #contact with justice system
+                         "qdbeen", #been given custodial sentence etc
+                         "cyber2" #summary variables cyber crime
+                         
+           ))) 
   
   # recode variables so that the factor orders run from largest to smallest
   
-  df %>% 
+  df <- df %>% 
     mutate_at(
       vars(age, gender, ethnicity, marital, n_cars, has_motorvehicle, single_parent, single_pensioner),
       fct_infreq
     )
   
+  #drop some specific vars
+  # df <- df %>% select(-c("prevsexoff"))
+  
   
 }
 
 
+### Apply functions
 
-# compare with sara ---------------------------------------------------------
-
-# first turn the dataset into a more friendly format
-
-
-
-scjs_combined <- 
-  scjs_main %>% 
+# Note: this will produce warnings when run
+scjs_combined_subset <- 
+  combined_data %>% 
+  mutate(data = map2(data, year, df_names_lower)) %>% 
+  mutate(data = map2(data, year, add_scjs_ids)) %>% 
+  #mutate(data = map2(data, year, tidy_vars)) %>% 
   mutate(data = map2(data, year, scjs_clean_and_standardize)) %>% 
   unnest_legacy()
 
-# for some reason it won't preserve the attributes of income through the unnesting,
-# so manually convert afterwards
+# Tidy up some nuisance variables
 
-# scjs_combined <- 
-#   scjs_combined %>% 
-#   mutate(income = fct_relevel(
-#     income, "Less than £5,000", "£5,000 - £9,999", "£10,000 - £19,999",
-#     "£20,000 - £49,999", "£50,000 or more"
-#   ),
-#   income = fct_explicit_na(income, "Refused/Don't know/Missing")) %>% 
-#   select(-value, -year)
+scjs_combined_subset <- 
+  scjs_combined_subset %>% 
+  mutate(qdconf_01 = coalesce(qdconf_1, qdconf_01),
+         qdconf_02 = coalesce(qdconf_2, qdconf_02),
+         qdconf_03 = coalesce(qdconf_3, qdconf_03),
+         qdconf_04 = coalesce(qdconf_4, qdconf_04),
+         qdconf_05 = coalesce(qdconf_5, qdconf_05),
+         qdconf_06 = coalesce(qdconf_6, qdconf_06),
+         qpolconf_01 = coalesce(qpolconf_1, qpolconf_01),
+         qpolconf_02 = coalesce(qpolconf_2, qpolconf_02),
+         qpolconf_03 = coalesce(qpolconf_3, qpolconf_03),
+         qpolconf_04 = coalesce(qpolconf_4, qpolconf_04),
+         qpolconf_05 = coalesce(qpolconf_5, qpolconf_05),
+         qpolconf_06 = coalesce(qpolconf_6, qpolconf_06),
+         qworr_01 = coalesce(qworr_1, qworr_01),
+         qworr_02 = coalesce(qworr_2, qworr_02),
+         qworr_03 = coalesce(qworr_3, qworr_03),
+         qworr_04 = coalesce(qworr_4, qworr_04),
+         qworr_05 = coalesce(qworr_5, qworr_05),
+         qworr_06 = coalesce(qworr_6, qworr_06),
+         qworr_07 = coalesce(qworr_7, qworr_07),
+         qworr_08 = coalesce(qworr_8, qworr_08),
+         qworr_09 = coalesce(qworr_9, qworr_09),
+         prevatttheftmv = coalesce(prevtatttheftmv, prevatttheftmv)) %>% 
+  select(-c("qdconf_1", "qdconf_2", "qdconf_3",
+            "qdconf_4", "qdconf_5", "qdconf_6",
+            "qpolconf_1", "qpolconf_2", "qpolconf_3",
+            "qpolconf_4", "qpolconf_5", "qpolconf_6",
+            "qworr_1", "qworr_2", "qworr_3",
+            "qworr_4", "qworr_5", "qworr_6",
+            "qworr_7", "qworr_8", "qworr_9",
+            "prevsexoff", "incsexoff",
+            )) %>% 
+  mutate(
+    numcars = as.numeric(n_cars),
+    anyvehicle = ifelse(numcars>0 , 1, 0),
+    qworr_01 = ifelse(anyvehicle==1,qworr_01,NA),
+    qworr_02 = ifelse(anyvehicle==1,qworr_02,NA),
+    qworr_03 = ifelse(anyvehicle==1,qworr_03,NA),
+    qworr_12 = ifelse(anyvehicle==1,qworr_12,NA),
+    qworr_13 = ifelse(anyvehicle==1,qworr_13,NA),
+    qworr_14 = ifelse(anyvehicle==1,qworr_14,NA)
+  ) %>% 
+  mutate(
+    qworr_01 = ifelse(is.na(qworr_01) & !is.na(qworr_12), qworr_12, qworr_01),
+    qworr_02 = ifelse(is.na(qworr_02) & !is.na(qworr_13), qworr_13, qworr_02),
+    qworr_03 = ifelse(is.na(qworr_03) & !is.na(qworr_14), qworr_14, qworr_03)
+  )
 
-# so n_adults, n_children and simd have issues
-
-scjs_combined |> 
-  count(simd_quint)
-
-# update after team meeting 2021-03-30 ------------------------------------
-
-# now we're going back to having private renting as separate again
-
-
-scjs_combined <- 
-  scjs_combined %>% 
-  mutate(tenure = if_else(tenure == "Social renting", 
-                          "Social renting", 
-                          "Owned or mortgage/Private rent/Rent free"),
-         tenure = fct_infreq(tenure))
-
-
-# check proportion never worked just for the first sweep
-
-scjs_main$data[[1]] %>% 
-  select(contains("nsseca"),
-         contains("qdgen"),
-         contains("age")) %>% 
-  count(nsseca, qdgen, qdage2) %>% 
-  group_by(qdage2, qdgen) %>% 
-  mutate(prop = n/ sum(n)) %>%
-  filter(nsseca == 9)
-
-# like 90% of those 65+ say never worked/LTU.
-# seems suspicious to me - people are not talking about their
-# last job here I suspect... and so this is probably a proxy
-# for retired?
-
-
-# also combining hundred pounds
-
-scjs_combined  <- 
-  scjs_combined %>% 
-  mutate(hundred_pounds = case_when(
-    as.character(hundred_pounds) == "No problem" ~ "No problem/a bit of a problem",
-    as.character(hundred_pounds) == "A bit of a problem" ~ "No problem/a bit of a problem",
-    as.character(hundred_pounds) == "A big problem" ~ "A big problem/impossible",
-    as.character(hundred_pounds) == "Impossible to find" ~ "A big problem/impossible",
-    is.na(hundred_pounds) ~ NA_character_,
-    TRUE ~ NA_character_
-  ),
-  hundred_pounds = fct_infreq(hundred_pounds))
-
-# and now combining ethnicity
+#Fixes across years
+#the qworr_01,02,03 questions need to be set to NA when there is <1 motor vehicle in the househole
+#(they were asked even to people who don't have cars)
+#these were changed in wordings, and became 12,13,14. so we need to do it for them too.
+#so, qworr_01,2,3 and 12,13,14 are the same. (basically, the filtering of cars is now done post-hoc, rather than questions being asked conditionally upon car ownership)
+#wording is the same, so we'll collapse them.
 
 
-scjs_combined %>% 
-  count(ethnicity)
+# Pooling info
+year <- c("2008_09", "2009_10", "2010_11", "2012_13", "2014_15", "2016_17",
+          "2017_18", "2018_19", "2019_20")
+dfactor <- c(1.5, 1.5, 1.5, 1.3, 1.2, 1.34, 1.22, 1.17, 1.21)
+n <- c(nrow(df_0809), nrow(df_0910), nrow(df_1011),
+       nrow(df_1213), nrow(df_1415), nrow(df_1617),
+       nrow(df_1718), nrow(df_1819), nrow(df_1920))
 
-scjs_combined <- 
-  scjs_combined %>% 
-  mutate(ethnicity = case_when(
-    ethnicity == "Minority Ethnic" ~ "Minority Ethnic",
-    ethnicity == "White Other" ~ "White Other",
-    is.na(ethnicity) ~ NA_character_,
-    TRUE ~ "White Scottish/British"),
-    ethnicity = fct_infreq(ethnicity))
+pooling_info <- tibble(year, dfactor, n) %>% 
+  mutate(deff = dfactor ^ 2) %>% 
+  mutate(neff = n / deff) %>% 
+  mutate(pool_neff = neff / sum(neff))
 
-scjs_combined <- 
-  scjs_combined %>% 
-  mutate(simd_quint = factor(sjlabelled::as_character(simd_quint)),
-         simd_top_15 = factor(sjlabelled::as_character(simd_top_15)))
+scjs_combined_subset_pool <- left_join(scjs_combined_subset, pooling_info, 
+                                by = c("survey_year" = "year"))
+
+summary_info <- scjs_combined_subset_pool %>% 
+  select(survey_year, wgtgindiv) %>% 
+  group_by(survey_year) %>% 
+  summarise(sum_weight = sum(wgtgindiv))
+
+scjs_combined_pool <- left_join(scjs_combined_subset_pool, summary_info, 
+                                by = c("survey_year"))
+
+scjs_pool_subset <- scjs_combined_pool %>%
+  mutate(weight_scale = wgtgindiv / (sum(wgtgindiv) / n)) %>% 
+  mutate(weight_scale_pool = weight_scale * pool_neff)
+
+### Testing if data looks ok
+
+scjs_pool_subset %>% select(year, wgtgindiv) %>% 
+  group_by(year) %>% 
+  summarise(sum(wgtgindiv))
+
+scjs_pool_subset %>% select(year, prevviolent, wgtgindiv) %>% 
+  group_by(year, prevviolent) %>% 
+  summarise(sum(wgtgindiv))
+
+scjs_pool_subset %>% select(year, prevsurveycrime, wgtgindiv) %>% 
+  group_by(year, prevsurveycrime) %>% 
+  summarise(sum(wgtgindiv))
+
+
+
+# This show which years have missing data for each question in the dataset
+year_base_counts <- scjs_pool_subset %>% group_by(year) %>% summarise_all(
+  ~ sum(!is.na(.))) %>%
+  gather(., key="variable",value="number_obs",-year) 
+
+year_base_counts_wider <- year_base_counts %>% 
+  pivot_wider(names_from = "year", values_from = number_obs)
+
+check_base <- year_base_counts_wider %>% 
+  filter(str_detect(variable, "qaco_")) #qdconf prevm qworr
+
+check_base <- year_base_counts_wider %>% 
+  filter(str_detect(variable, "inc")) #qdconf prevm qworr
+
+
+year_base_counts_wider %>% 
+  filter(str_detect(variable, "theftmv")) 
+
+# This can be run to show which columns have any missing values at all
+# year_counts %>% group_by(variable) %>% 
+#   summarise(
+#     no_na = !(any(number_obs==0))
+#   ) -> variable_across_years
+
+
+# Tidy up environment a bit
+rm(list = c("scjs_combined_pool", "scjs_combined_subset", 
+            "scjs_combined_subset_pool"))
 
 
 
 
-# export combined data ----------------------------------------------------
 
-
-saveRDS(scjs_combined,
-        here::here("data", "scjs_main_2008_09_19_20_explanatory_vars.rds"))

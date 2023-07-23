@@ -94,7 +94,8 @@ scjs_pool_full_sc <- left_join(scjs_pool_full_sc, summary_info_sc,
 
 scjs_pool_full_sc <- scjs_pool_full_sc %>% 
   mutate(weight_scale_sc = wgtgindiv_sc / (sum_weight / n_sc)) %>% 
-  mutate(weight_scale_pool_sc = weight_scale_sc * pool_neff)
+  mutate(weight_scale_pool_sc = weight_scale_sc * pool_neff) %>% 
+  select(-starts_with("qdreaddy"))
 
 # This show which years have missing data for each question in the dataset
 year_base_counts_sc <- scjs_pool_full_sc %>% group_by(survey_year) %>% summarise_all(
