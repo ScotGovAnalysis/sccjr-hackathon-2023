@@ -67,5 +67,45 @@ install.packages("tidyverse")
 install.packages("haven")
 ```
 
-#### Script 1
+#### Script 1 - extract datasets
+
+Having downloaded the SPSS datasets from the UKDS you will have 9 zip files in your download folder. This script can be used to extract all of the actual datasets themselves into your desired folder for you. You will have to edit two lines of code yourself, lines 5 and 7, to specify where your download folder is, and which folder you want the datasets to go into, but aside from that it should do everything for you!
+
+You may have done this manually already or prefer to do it on your own so don't worry this script isn't essential for the future steps, but might save you some time. 
+
+One important thing to note is that this only extracts the actual datasets. When you download the file from the UKDS it also comes with some other files that might be useful to you, for example the questionnaire scripts, or data dictionaries which outline the link between questionnaire questions and dataset columns.
+
+### Script 2 - check datasets
+
+This will just check that you have all of the required files in your project directory. Again this isn't essential but the datasets as they come from UKDS have difficult to understand names, so you can use this to check you have everything good to go. You may have preferred to rename the datasets something more usable, which means this script won't check things for you but that's okay.
+
+### Script 3 - read datasets
+
+Script 3 reads in the necessary datasets for the next scripts. It does so using the `haven` R package to read the SPSS data. For some reason the 2018/19 and 2019/20 cyber crime datasets come separately to their other main surveys, so this script joins them together using a natural join (so all shared columns appear only once).
+
+One thing to note is that the UKDS datasets also come with the victim form (VF) datasets for the first 3 survey years, but for the hackathon event we decided not to go down the route of using them.
+
+### Scripts 4 - Non-victim form dataset (NVF)
+#### Script 4.1 - create full pooled dataset
+
+Individual SCJS datasets are really large, some of them have over a thousand columns. While this can be a great thing to have so much data available, it can be overwhelming too. The first script here aims to join all of the 9 individual surveys together without losing any of the data. In this sense it is the largest possible pooled sample dataset. However, this means it will also be the most difficult to handle.
+
+Originally I wrote this script using dplyr's `bind_rows` function. At the time this would just coerce variables of different data classes together and could produce the full pooled dataset in one (slow) fell swoop. 
+
+This isn't possible anymore and trying to do so will produce errors. The workaround for this is to convert all columns of all datasets to a character variable, and then use readr's `type_convert` function to re-interpolate the columns into its likely data class.
+
+I have not done extensive investigation to determine the success of this workaround, so it would be wise to throw up a bunch of caveat's at this stage. However, this script throws everything including the kitchen sink into one dataset, so if you want to find something then it's in here somewhere!
+
+#### Script 4.2 - create curated pooled dataset
+
+Due to the complexity of the full dataset produced in 4.1, it is necessary to produce something that it much more easier to handle and understand, so 4.2 creates a different dataset that only includes a subset of variables, hopefully all of the ones you might need for your intended analysis.
+Credit to Ben Matthews for the `scjs_clean_and_standardize` function that tidies up all of the demographic variables nicely.
+
+This script also produces a summary of the base sizes for each question across the years. This is an easy way to track when a question was removed/introduced from the survey but is also useful in seeing if a variable might be broken across different years. My best effort has gone into making sure that as few variables as possible are broken, but I might not have caught them all.
+
+#### Script 4.2.1 - curated dataset create binary vars
+Taking the output from 4.2, this script transforms many of the variables of survey questions into a binary format, which is easier to analyse with. For example, a question might be originally coded as 1,2,3,4 corresponding to strongly agree, somewhat agree, somewhat disagree, strongly diagree. The recoded variable would be 1,1,0,0 meaning it is not simply net: agree or not agree.
+
+### Script 5 - create full sc dataset
+The last script employs the same methodology as 4.1 to apply to the self completion datasets. These are only availale for the first 3 years without special license access. There is a reduced need to create a subset of variables for the self-completion, in part due to better data integrity of variables across years, but also due to the fact that the structure of the self-completion section produces much more columns than other parts of the survey. I took out variables relating to a module asking about newspaper reading habits, but if that's of interest feel free to include.
 
