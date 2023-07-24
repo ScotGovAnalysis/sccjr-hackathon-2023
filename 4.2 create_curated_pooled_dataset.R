@@ -854,6 +854,36 @@ rm(list = c("scjs_combined_pool", "scjs_combined_subset",
             "scjs_combined_subset_pool"))
 
 
+# write.csv(year_base_counts_wider, ".\\Handy resources\\year_base_size.csv", row.names=FALSE)
 
+### Create subset of first 3 years with self-completion summary variables
 
+scjs_sc_select <- 
+  scjs_pool_full_sc %>% 
+  select(year_case_id, survey_year,
+         shsent, shcalls, shloit, shfoll, shdk, shnone, shref, #stalking and harassment summary variables
+         starts_with("da_1i_"), #psychological partner abuse
+         starts_with("da_1iii_"), #physical partner abuse
+         svinex, svst, svts, svdk, svnone, svref, #less serious sexual assault
+         safs, saafs, saos, saaos, sadk, sanone, saref #more serious sexual assault
+        )
 
+# looks like the data is in each year (for the most part, so fine to join)
+year_base_counts_2 <- scjs_sc_select %>% group_by(survey_year) %>% summarise_all(
+  ~ sum(!is.na(.))) %>%
+  gather(., key="variable",value="number_obs",-survey_year) 
+
+year_base_counts_wider_2 <- year_base_counts_2 %>% 
+  pivot_wider(names_from = "survey_year", values_from = number_obs)
+
+scjs_pool_subset_sc <- 
+  scjs_pool_subset %>% 
+  filter(year %in% c("2008_09", "2009_10", "2010_11"))
+
+scjs_pool_subset_sc <- left_join(scjs_pool_subset_sc, scjs_sc_select, by = c("year_case_id", "year" = "survey_year"))
+  
+  
+  
+  
+  
+  
