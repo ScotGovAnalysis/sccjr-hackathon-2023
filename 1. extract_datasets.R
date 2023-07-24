@@ -1,4 +1,6 @@
-### This script will extract the datsets from your download folder and place them into a new directory 
+### This script will extract the datasets from your download folder and place them into a new directory 
+
+# If you are a Mac user, please run the code blocks below where it says "mac users".
 
 download_path <- "" # Enter your download file path
 
@@ -34,15 +36,29 @@ for (file in zip_files){
   out_f <-  paste0(project_path, "\\", "data")
   unzip(zip_f, exdir = out_f)
 }
+# mac users 
+# for (file in zip_files){
+#   zip_f <-  paste0(download_path, 
+#                    "/",
+#                    file)
+#   out_f <-  paste0(project_path, "/", "data")
+#   unzip(zip_f, exdir = out_f)
+# }
 
 # saves a list of the names of all of the extracted folders, useful to delete after copying dataset files to tidy up and reduce size
 unzipped_files <- c(paste0("data\\", list.files(paste0(project_path, "\\data"))))
+# mac users
+# unzipped_files <- c(paste0("data/", list.files(paste0(project_path, "/data"))))
 
 # moves the SPSS datasets from their subfolders into your 'data' folder
 spss_files <- list.files(pattern='*.sav', recursive = TRUE)
 file.copy(from = spss_files,
           to = paste0(project_path, "\\", "data"), recursive = TRUE,
           overwrite = TRUE, copy.mode = TRUE, copy.date = FALSE)
+# mac users 
+# file.copy(from = spss_files,
+          # to = paste0(project_path, "/", "data"), recursive = TRUE,
+          # overwrite = TRUE, copy.mode = TRUE, copy.date = FALSE)
 
 # deletes excess files in data directory - if you wish to keep these for completeness's sake then comment this line out
 unlink(unzipped_files, recursive = TRUE)
